@@ -16,7 +16,7 @@ jobs:
 
       - name: Extract project
         run: |
-          unzip -o MasjidTVApp_Modern_Design.zip -d project
+          unzip -o MasjidTVApp_Modern_Design_FIXED.zip -d project
 
       - name: Set up Java
         uses: actions/setup-java@v4
