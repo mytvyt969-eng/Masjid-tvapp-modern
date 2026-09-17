@@ -16,6 +16,8 @@ jobs:
 
       - name: Extract project
         run: |
+          rm -rf project
+          mkdir project
           unzip -o MasjidTVApp_Exact_GreenGold.zip -d project
 
       - name: Set up Java
@@ -29,9 +31,41 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Find Android project
+        run: |
+          echo "Searching for Android Gradle project..."
+          find project -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print
+
       - name: Build APK
-        working-directory: project
-        run: gradle assembleDebug --no-daemon
+        run: |
+          PROJECT_DIR=$(find project -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit | xargs dirname)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: Android Gradle project not found!"
+            find project -maxdepth 5 -type f | head -100
+            exit 1
+          fi
+
+          echo "Android project found at: $PROJECT_DIR"
+
+          cd "$PROJECT_DIR"
+
+          echo "Building APK..."
+          gradle assembleDebug --no-daemon
+
+          echo "Searching for APK..."
+          APK=$(find . -type f -name "app-debug.apk" -print -quit)
+
+          if [ -z "$APK" ]; then
+            echo "ERROR: APK not found!"
+            exit 1
+          fi
+
+          echo "APK found: $APK"
+
+          mkdir -p "$GITHUB_WORKSPACE/project/app/build/outputs/apk/debug"
+
+          cp "$APK" "$GITHUB_WORKSPACE/project/app/build/outputs/apk/debug/app-debug.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
